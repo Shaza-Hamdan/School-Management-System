@@ -4,7 +4,6 @@ using Trial.DTO;
 using TRIAL.Persistence.entity;
 using System.Collections.Generic;
 using TRIAL.Persistence.Repository;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using System.Data;
 using System.Security.Cryptography;
@@ -12,8 +11,10 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.HttpResults;
 using EncryptDecrypt;
-using VerificationRegisterN;
-using AssigningRoleU;
+using EmailSending;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace TRIAL.Services.Implementations
 {
@@ -22,100 +23,81 @@ namespace TRIAL.Services.Implementations
         //database connection
         private readonly AppDBContext appdbContext;
         private readonly DatabaseSettings dBSettings;
-        private readonly IEmailTestService emailTestservice; // Declare the email service
-        private readonly VerificationRegister verificationRegister;
-
-        private readonly AssigningRole assigningRole;
-        public RegistrationService(AppDBContext appDbContext, IOptions<DatabaseSettings> dbSettings, IEmailTestService EmailTestService, VerificationRegister verificationregister, AssigningRole assigningrole)
+        private readonly Emailsending _emailSending;
+        public RegistrationService(AppDBContext appDbContext, IOptions<DatabaseSettings> dbSettings, Emailsending emailSending)//, VerificationRegister verificationregister, AssigningRole assigningrole)
         {
             appdbContext = appDbContext;
             dBSettings = dbSettings.Value;
-            emailTestservice = EmailTestService;
-            verificationRegister = verificationregister;
-            assigningRole = assigningrole;
+            _emailSending = emailSending;
         }
 
 
-        public string Register(string email)
+        public async Task<string> Register(CreateNewAccount request)
         {
-            // Check if the email already exists
-            var existingUser = appdbContext.registrations.SingleOrDefault(u => u.Email == email);
-
+            var existingUser = await appdbContext.registrations
+                                        .SingleOrDefaultAsync(u => u.Email == request.Email);
             if (existingUser != null)
             {
-                return "Email already exists";
+                return "EmailExists";
             }
 
-            // Email does not exist, generate a verification code
-            string verificationCode = verificationRegister.GenerateVerificationCode();
+            string passwordHash = EnDePassword.ConvertToEncrypt(request.Password);
 
-            // Store the verification code in a temporary table or cache with expiration
-            verificationRegister.StoreVerificationCode(email, verificationCode);
-
-            // Send verification code to the email
-            emailTestservice.SendEmail(email, "Verification Code", $"Your verification code is {verificationCode}");
-            return "Verification code sent to email";
-        }
-
-        public string VerifyCode(VerifyCodeRequest request)
-        {
-            var verificationEntry = appdbContext.emailVerification
-                .SingleOrDefault(v => v.Email == request.Email && v.Code == request.Code);
-
-            if (verificationEntry == null || verificationEntry.Expiry < DateTime.Now)
+            var user = new Registration
             {
-                return "Invalid or expired verification code";
+                UserName = request.UserName,
+                Email = request.Email,
+                PasswordHash = passwordHash,
+                PhoneNumber = request.PhoneNumber,
+                DateOfBirth = request.DateOfBirth.Value,
+                Address = request.Address,
+                Role = request.Role
+            };
+
+            try
+            {
+                // Save the user to the database
+                appdbContext.registrations.Add(user);
+                await appdbContext.SaveChangesAsync();
+                return "Success";
             }
-
-            // Code is valid, proceed with sending the username and password
-            return verificationRegister.GenerateAndSendCredentials(request.Email);
+            catch (Exception)
+            {
+                // Log exception (optional)
+                return "Error";
+            }
         }
-
 
         public string Login(LoginRequest account)
         {
             var user = appdbContext.registrations.SingleOrDefault(u => u.Email == account.Email);
-
-            if (user == null)
-            {
-                return "NotFound";
-            }
+            Console.WriteLine($"DEBUG: Searching for {account.Email}");
+            if (user == null) return "NotFound";
 
             string decryptedPassword = EnDePassword.ConvertToDecrypt(user.PasswordHash);
+            if (decryptedPassword != account.Password) return "Invalid Email or Password";
+            // for authorization//
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes("ThisIsASuperLongSecretKeyForJWTToken12345"); // match Program.cs
 
-            // Compare the hashed password
-            if (decryptedPassword != account.Password)
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                return "Invalid Email or Password";
-            }
-            // Check if the user's profile is complete
-            if (!user.IsProfileComplete)
-            {
-                // If the profile data is provided in the login request, update the profile
-                if (!string.IsNullOrEmpty(account.Address) &&
-                    !string.IsNullOrEmpty(account.PhoneNumber) &&
-                    account.DateOfBirth != default(DateTime))
+                Subject = new ClaimsIdentity(new[]
                 {
-                    // Update user's profile information
-                    user.Address = account.Address;
-                    user.PhoneNumber = account.PhoneNumber;
-                    user.DateOfBirth = account.DateOfBirth;
-                    user.IsProfileComplete = true; // Mark profile as complete
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
 
-                    appdbContext.SaveChanges();
-
-                    return "Login Successful, Profile Updated";
-                }
-                else
-                {
-                    // Profile is incomplete and required data is missing
-                    return "ProfileIncomplete, Fill the required fields";
-                }
-            }
-
-            return "Login Successful";
-
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+            //....//
         }
+
 
         public async Task<string> GeneratePasswordResetTokenAsync(string email)
         {
@@ -132,7 +114,7 @@ namespace TRIAL.Services.Implementations
             await appdbContext.SaveChangesAsync();
 
             var resetLink = $"http://localhost:5000/api/account/resetpassword?token={token}&email={email}";
-            emailTestservice.SendEmail(email, "Password Reset Request", $"Click <a href='{resetLink}'>here</a> to reset your password.");//here is a hyperlink
+            await _emailSending.SendEmail(email, "Password Reset Request", $"Click <a href='{resetLink}'>here</a> to reset your password.");
 
             return "Password reset token generated.";
         }
@@ -153,53 +135,5 @@ namespace TRIAL.Services.Implementations
 
             return "Password reset successful.";
         }
-        public async Task<string> AssignRoleAsync(AssignRoleRequest request, string adminEmail)
-        {
-            //Validate the request
-            if (string.IsNullOrWhiteSpace(request.UserEmail) || string.IsNullOrWhiteSpace(request.NewRole))
-            {
-                return "Invalid request parameters.";
-            }
-
-            //Find the user
-            var user = await appdbContext.registrations.SingleOrDefaultAsync(u => u.Email == request.UserEmail);
-
-            if (user == null)
-            {
-                return "User not found.";
-            }
-
-            //Check if the admin is authorized
-            if (!await assigningRole.IsAdmin(adminEmail))
-            {
-                return "Not authorized";
-            }
-
-            //Assign the new role to the user
-            user.Role = request.NewRole;
-
-            //Save changes to the database
-            appdbContext.registrations.Update(user);
-            await appdbContext.SaveChangesAsync();
-
-            return $"Role {request.NewRole} assigned to {user.Email} successfully.";
-        }
-
-        public async Task<bool> CreateInitialAdmin(string username, string email, string password)
-        {
-            var passwordHash = EnDePassword.ConvertToEncrypt(password);
-            var newAdmin = new Registration(username, email, passwordHash, "Admin");
-
-            // Check if any user exists already to prevent overwriting
-            var existingUser = await appdbContext.registrations.SingleOrDefaultAsync(u => u.Email == email);
-            if (existingUser != null) return false;
-
-            appdbContext.registrations.Add(newAdmin);
-            await appdbContext.SaveChangesAsync();
-
-            return true;
-        }
-
-
     }
 }

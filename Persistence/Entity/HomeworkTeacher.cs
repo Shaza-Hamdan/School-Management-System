@@ -18,7 +18,7 @@ namespace TRIAL.Persistence.entity
         [Column("Discription")]
         public string Discription { get; set; }
 
-        [Required]
+
         public DateTime Deadline { get; set; }
 
 
@@ -26,6 +26,6 @@ namespace TRIAL.Persistence.entity
         public int subjectsId { get; set; }
         public Subjects subjects { get; set; }
 
-        public ICollection<HomeworkStudent>? HomeworkStudent { get; set; }
+        public ICollection<HomeworkStudent> HomeworkStudent { get; set; }
     }
 }

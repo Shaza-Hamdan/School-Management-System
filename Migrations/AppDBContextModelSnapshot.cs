@@ -17,7 +17,7 @@ namespace Tutorial.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.7")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -32,7 +32,6 @@ namespace Tutorial.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(6)
                         .HasColumnType("varchar(6)");
 
                     b.Property<string>("Email")
@@ -58,15 +57,15 @@ namespace Tutorial.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("DATETIME");
 
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(255)");
+
                     b.Property<int>("HomeworkTId")
                         .HasColumnType("int");
 
                     b.Property<int>("RegistrationId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Solution")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -150,15 +149,12 @@ namespace Tutorial.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("datetime(6)");
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<bool>("IsProfileComplete")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -175,7 +171,6 @@ namespace Tutorial.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Role")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("UserName")

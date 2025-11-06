@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -10,11 +9,11 @@ namespace TRIAL.Persistence.entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required]
-        [Column(TypeName = "TEXT")] // For large text data
-        public string Solution { get; set; }
+        [Column(TypeName = "VARCHAR(255)")]
+        public string FilePath { get; set; }
 
-        [Column(TypeName = "DATETIME")] // For date and time
+
+        [Column(TypeName = "DATETIME")]
         public DateTime Created { get; set; } // = DateTime.Now;
 
         [ForeignKey("Registration")]

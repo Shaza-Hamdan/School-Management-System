@@ -17,7 +17,7 @@ namespace TRIAL.Persistence.entity
         public DateTime Expiry { get; set; }
 
         [Required]
-        [MaxLength(6)]  // Limiting code to 6 digits
+        [Column(TypeName = "varchar(6)")] // Limiting code to 6 digits
         public string Code { get; set; }
 
         // public bool IsVerified { get; set; } = false;  // Flag to track if the code was used successfully

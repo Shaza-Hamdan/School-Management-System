@@ -10,8 +10,8 @@ namespace Trial.DTO
     );
 
     public record AssignRoleRequest(
-        string UserEmail, // The ID of the user to whom the role will be assigned
-        string NewRole // The new role to be assigned (e.g., "Teacher", "Student")
+        string UserEmail,
+        string NewRole
     );
 
     public record CreateAdminRequest(
@@ -23,19 +23,19 @@ namespace Trial.DTO
     public record CreateNewAccount(
         string UserName,
         string Password,
+        [Required(ErrorMessage = "Email is required.")]
+        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+         ErrorMessage = "Email format must include a valid domain (e.g. user@mail.com).")]
         string Email,
-        DateTime? DateOfBirth,
+        DateOnly? DateOfBirth,
         string Address,
-        string PhoneNumber
+        string PhoneNumber,
+        string Role
     );
 
     public record LoginRequest(
         string Email,
-        string Password,
-        // Optional fields for profile update
-        string Address,
-        string PhoneNumber,
-        DateTime DateOfBirth
+        string Password
     );
 
     public record PasswordResetRequest(
@@ -48,15 +48,6 @@ namespace Trial.DTO
         string NewPassword
     );
 
-    // public record UserProfile
-    // (
-    //  int Id,
-    //  string UserName,
-    //  string Email,
-    //  DateTime? DateOfBirth,
-    //  string Address,
-    //  string PhoneNumber
-    //  );
 
 
 }

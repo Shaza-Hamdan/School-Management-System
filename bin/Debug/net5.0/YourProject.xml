@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Tutorial</name>
+    </assembly>
+    <members>
+        <member name="M:TRIAL.Controllers.StudentHomeworkController.UploadHomework(System.Int32,System.Int32,Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Uploads a homework file for a student.
+            </summary>
+            <param name="homeworkTId">ID of the homework task.</param>
+            <param name="registrationId">ID of the student's registration.</param>
+            <param name="file">The homework file to upload.</param>
+            <returns>A success message if the upload is successful.</returns>
+        </member>
+        <member name="T:Tutorial.Migrations.Initial1">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial1.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial1.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial1.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:Tutorial.Migrations.Initial2">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial2.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial2.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial2.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:Tutorial.Migrations.Initial3">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial3.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial3.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial3.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:Tutorial.Migrations.Initial4">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial4.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial4.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:Tutorial.Migrations.Initial4.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

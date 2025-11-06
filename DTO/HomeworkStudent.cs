@@ -3,17 +3,17 @@ namespace Trial.DTO
     public record AddStudentHomeworkDTO(
         int RegistrationId,
         int homeworkTId,
-        string Solution);
+        string filePath);
 
     public record StudentHomeworkDTO(
         int Id,
         int RegistrationId,
-        int homeworkTId,
-        string Solution);
+        int HomeworkTId,
+        string filePath);
 
     public record ModifyStudentHomeworkDTO(
         int Id,
-        string Solution);
+        string filePath);
 
     public record DeleteHomework(
         int homeworkTId,

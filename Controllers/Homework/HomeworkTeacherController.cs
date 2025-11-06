@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Trial.DTO;
 
 [ApiController]
-[Route("api/teacher/[controller]")]
+[Route("api/[controller]")]
 public class HomeworkTeacherController : ControllerBase
 {
     private readonly IHomeworkTeacherService homeworkservice;
@@ -14,13 +15,15 @@ public class HomeworkTeacherController : ControllerBase
         homeworkservice = homeworkService;
     }
 
-    [HttpGet("Get")]
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpGet("GetAll Homeworks")]
     public async Task<IEnumerable<HomeworkTDTO>> GetHomeworks()
     {
         return await homeworkservice.GetHomeworksAsync();
     }
 
-    [HttpGet("Get/{id}")]
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpGet("Get a Homework")]
     public async Task<ActionResult<HomeworkTDTO>> GetHomework(int id)
     {
         var homework = await homeworkservice.GetHomeworkByIdAsync(id);
@@ -31,35 +34,57 @@ public class HomeworkTeacherController : ControllerBase
         return homework;
     }
 
-    [HttpPost("Post")]
-    public async Task<ActionResult<HomeworkTDTO>> AddHomework(AddHomeworkTDTO addHomeworkDto)
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpPost("Add a homework")]
+    public async Task<string> AddHomework(AddHomeworkTDTO addHomeworkDto)
     {
+
         var homework = await homeworkservice.AddHomeworkAsync(addHomeworkDto);
-        return CreatedAtAction(nameof(GetHomework), new { id = homework.Id }, homework);
+
+        if (homework == null)
+        {
+            return "Homework could not be created.";
+        }
+        else
+        {
+            return "Homework added successfully";
+        }
+
     }
 
-    [HttpPut("Put/{id}")]
-    public async Task<IActionResult> UpdateHomework(int id, ModifyHomeworkTDTO modifyHomeworkDto)
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpPut("Edit an existing Homework")]
+    public async Task<string> UpdateHomework(ModifyHomeworkTDTO modifyHomeworkDto)
     {
-        if (id != modifyHomeworkDto.Id)
+        try
         {
-            return BadRequest();
-        }
+            var result = await homeworkservice.UpdateHomeworkAsync(modifyHomeworkDto);
+            if (!result)
+            {
+                return "Homework has not been edited successfully";
+            }
 
-        var result = await homeworkservice.UpdateHomeworkAsync(modifyHomeworkDto);
-        if (!result)
+            return "Homework has been edited successfully";
+        }
+        catch (Exception)
         {
-            return NotFound();
+            return $"An error occurred while editing homework, please try again";
         }
-
-        return NoContent();
     }
 
-    // Endpoint to clean up expired homeworks
-    [HttpPost("cleanup-expired")]
+
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpPost("cleanup expired Homeworks")]
     public async Task<IActionResult> CleanupExpiredHomeworks()
     {
-        await homeworkservice.CleanupExpiredHomeworksAsync();
-        return NoContent(); // Returns a 204 No Content response
+        var deleted = await homeworkservice.CleanupExpiredHomeworksAsync();
+        if (deleted)
+        {
+            return Ok("Expired homework has been deleted.");
+        }
+        else
+        {
+            return Ok("No expired homework has been found.");
+        }
     }
 }

@@ -1,5 +1,3 @@
-
-using Trial.DTO;
 using TRIAL.Persistence.entity;
 using TRIAL.Persistence.Repository;
 using System.Data;
@@ -10,80 +8,99 @@ namespace TRIAL.Services.Implementations
     public class StudentHomeworkService : IStudentHomeworkService
     {
         private readonly AppDBContext appdbContext;
-
         public StudentHomeworkService(AppDBContext appDbContext)
         {
             appdbContext = appDbContext;
         }
 
-        public async Task<StudentHomeworkDTO> SubmitHomeworkAsync(AddStudentHomeworkDTO addStudentHomeworkDto)
+        public async Task<string> UploadHomeworkFileAsync(int homeworkTId, int registrationId, IFormFile file)
         {
-            var studentHomework = new HomeworkStudent
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("No file uploaded.");
+
+            // Generate unique file path
+            var filePath = Path.Combine("uploads", Guid.NewGuid() + Path.GetExtension(file.FileName));
+
+            // Save file to the server
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                RegistrationId = addStudentHomeworkDto.RegistrationId,
-                HomeworkTId = addStudentHomeworkDto.homeworkTId,
-                Solution = addStudentHomeworkDto.Solution
+                await file.CopyToAsync(stream);
+            }
+
+            var homeworkStudent = new HomeworkStudent
+            {
+                HomeworkTId = homeworkTId,
+                RegistrationId = registrationId,
+                FilePath = filePath,
+                Created = DateTime.Now
             };
 
-            appdbContext.HwS.Add(studentHomework);
+            appdbContext.HwS.Add(homeworkStudent);
             await appdbContext.SaveChangesAsync();
 
-            return new StudentHomeworkDTO(studentHomework.Id, studentHomework.RegistrationId, studentHomework.HomeworkTId, studentHomework.Solution);
+            return "File uploaded successfully.";
         }
-
-        public async Task<StudentHomeworkDTO> GetStudentHomeworkByIdAsync(int id)
+        public async Task<HomeworkStudent> GetStudentHomeworkByIdAsync(int studentId)
         {
-            var studentHomework = await appdbContext.HwS
-                .Include(sh => sh.Registration)
-                .Include(sh => sh.HomeworkT)
-                .FirstOrDefaultAsync(sh => sh.Id == id);
+            var homework = await appdbContext.HwS
+                .Where(hw => hw.RegistrationId == studentId)
+                .OrderByDescending(hw => hw.Created) // to get the latest homework first
+                .FirstOrDefaultAsync();
 
-            if (studentHomework == null)
+            if (homework == null)
+                throw new KeyNotFoundException("Homework not found for the specified student.");
+
+            return homework;
+        }
+        public async Task<string> UpdateHomeworkFileAsync(int homeworkTId, int registrationId, IFormFile newFile)
+        {
+
+            if (newFile == null || newFile.Length == 0)
+                throw new ArgumentException("No file uploaded.");
+
+            var homeworkStudent = await appdbContext.HwS
+                .FirstOrDefaultAsync(hs => hs.HomeworkTId == homeworkTId && hs.RegistrationId == registrationId);
+
+            if (homeworkStudent == null)
+                throw new InvalidOperationException("Homework record not found.");
+
+            // Delete the old file
+            if (File.Exists(homeworkStudent.FilePath))
             {
-                return null;
+                File.Delete(homeworkStudent.FilePath);
             }
 
-            return new StudentHomeworkDTO(studentHomework.Id, studentHomework.RegistrationId, studentHomework.HomeworkTId, studentHomework.Solution);
+            // Save new file to folder
+            var newFilePath = Path.Combine("uploads", Guid.NewGuid() + Path.GetExtension(newFile.FileName));
+            using (var stream = new FileStream(newFilePath, FileMode.Create))
+            {
+                await newFile.CopyToAsync(stream);
+            }
+
+            homeworkStudent.FilePath = newFilePath;
+            homeworkStudent.Created = DateTime.Now;
+            await appdbContext.SaveChangesAsync();
+
+            return "Homework updated successfully.";
         }
 
-        public async Task<bool> UpdateStudentHomeworkAsync(ModifyStudentHomeworkDTO modifyStudentHomeworkDto)
+
+        public async Task<bool> DeleteHomework(int homeworkTId, int registrationId)
         {
-            var studentHomework = await appdbContext.HwS.FindAsync(modifyStudentHomeworkDto.Id);
-            if (studentHomework == null)
+            var homework = await appdbContext.HwS
+                .FirstOrDefaultAsync(h => h.HomeworkTId == homeworkTId && h.RegistrationId == registrationId);
+
+            if (homework == null)
             {
                 return false;
             }
 
-            studentHomework.Solution = modifyStudentHomeworkDto.Solution;
-
-            appdbContext.HwS.Update(studentHomework);
-            await appdbContext.SaveChangesAsync();
-
-            return true;
-        }
-
-
-        public async Task<IEnumerable<StudentHomeworkDTO>> GetStudentHomeworkAsync()
-        {
-            return await appdbContext.HwS
-                .Select(h => new StudentHomeworkDTO(h.Id, h.RegistrationId, h.HomeworkTId, h.Solution))
-                .ToListAsync();
-        }
-
-        public async Task<bool> DeleteHomework(DeleteHomework hwork)
-        {
-            // Find the homework submission based on its ID and the student's ID
-            var studentHomework = await appdbContext.HwS
-                .FirstOrDefaultAsync(h => h.HomeworkTId == hwork.homeworkTId && h.RegistrationId == hwork.RegistrationId);
-
-            if (studentHomework == null)
+            if (!string.IsNullOrEmpty(homework.FilePath) && File.Exists(homework.FilePath))
             {
-                // Homework submission not found
-                return false;
+                File.Delete(homework.FilePath);
             }
 
-            // Remove the homework submission from the context
-            appdbContext.HwS.Remove(studentHomework);
+            appdbContext.HwS.Remove(homework);
             await appdbContext.SaveChangesAsync();
 
             return true;

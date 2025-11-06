@@ -5,15 +5,15 @@ namespace TRIAL.Services
 {
     public interface IRegistrationService
     {
-        string Register(string email);
+        Task<string> Register(CreateNewAccount request);
         string Login(LoginRequest account);
         Task<string> GeneratePasswordResetTokenAsync(string email);
         Task<string> ResetPasswordAsync(ResetPasswordRequest model);
-        string VerifyCode(VerifyCodeRequest request);
+        //string VerifyCode(VerifyCodeRequest request);
 
-        Task<string> AssignRoleAsync(AssignRoleRequest request, string adminEmail);
+        //Task<string> AssignRoleAsync(AssignRoleRequest request, string adminEmail);
 
-        Task<bool> CreateInitialAdmin(string username, string email, string password);
+        //Task<bool> CreateInitialAdmin(string username, string email, string password);
 
     }
 }

@@ -1,18 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Data;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using TRIAL.Persistence.entity;
-using System.Data.SqlClient;
-using Microsoft.Data.SqlClient;
 using Trial.DTO;
 using TRIAL.Services;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Authorization;
-using AssigningRoleU;
+
 
 namespace TRIAL.Controllers
 {
@@ -21,63 +10,36 @@ namespace TRIAL.Controllers
     public class RegistrationController : ControllerBase
     {
         private readonly IRegistrationService registrationservice;
-        private readonly AssigningRole assigningRole;
-        // private readonly EmailService emailService;
-        public RegistrationController(IRegistrationService registrationService, AssigningRole assigningrole)//, EmailService emailservice)  //, ILogger<RegistrationController> logger)
+
+        public RegistrationController(IRegistrationService registrationService)
         {
             registrationservice = registrationService;
-            assigningRole = assigningrole;
-            // emailService = emailservice;
         }
 
         [HttpPost("register")]
-        public IActionResult Register(string email)
+        public async Task<IActionResult> Register(CreateNewAccount request)
         {
-            //registrationservice.Register(account);
-
-            var result = registrationservice.Register(email);
-            if (result == "Email already exists")
+            try
             {
-                return BadRequest(new { message = "Email already exists." });
+                var result = await registrationservice.Register(request);
+
+                if (result == "EmailExists")
+                {
+                    return BadRequest(new { message = "The email address is already registered. Please use a different email." });
+                }
+
+                if (result == "Success")
+                {
+                    return Ok(new { message = "New user has been added successfully." });
+                }
+
+                return BadRequest(new { message = "Registration failed due to an unknown reason." });
             }
-
-            return Ok(new { message = "Verification code sent to email." });
-        }
-
-        [HttpPost("create-admin")]
-        public async Task<IActionResult> CreateAdmin([FromForm] CreateAdminRequest request)
-        {
-            var result = await registrationservice.CreateInitialAdmin(request.UserEmail, request.UserEmail, request.Password);
-
-            if (result)
+            catch (Exception ex)
             {
-                return Redirect("/home"); // Redirect to the main application page
+                // Handle unexpected errors
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
             }
-
-            return BadRequest("Error creating admin. Please try again.");
-        }
-
-        [HttpPost("assign-role")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
-        {
-            var result = await registrationservice.AssignRoleAsync(request, User.Identity.Name); //the system will automatically identify the admin's email using User.Identity.Name in the backend code, which retrieves the email of the currently authenticated admin making the request.
-            if (result == "Not authorized")
-                return Unauthorized(result);
-
-            return Ok(result);
-        }
-
-        [HttpPost("VerifyCode")]
-        public IActionResult VerifyCode([FromBody] VerifyCodeRequest request)
-        {
-            var result = registrationservice.VerifyCode(request);
-            if (result == "Invalid or expired verification code")
-            {
-                return BadRequest(result); // 400 Bad Request
-            }
-
-            return Ok(result); // 200 OK
         }
 
         [HttpPost("login")]
