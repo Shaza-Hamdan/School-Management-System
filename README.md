@@ -19,3 +19,11 @@ It provides tools for managing users, subjects, homework, and marks, with secure
 📝 Homework Management — Teachers assign homework; students can upload and update their submissions.
 
 📊 Marks Tracking — Teachers can record and update students’ marks.
+
+▶️ How to Run the Project:
+
+Make sure you have the .NET SDK installed. Then open the project in VS Code and run:
+
+dotnet build
+dotnet run
+Once the backend starts, you can open the API documentation and test all endpoints using Swagger at: http://localhost:5000/swagger (or the port shown in your terminal)
